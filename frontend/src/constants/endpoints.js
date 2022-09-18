@@ -1,0 +1,9 @@
+export const USER = '/api/users/list/';
+export const REGISTER = 'api/v1/user/create';
+export const LOGIN = '/api/v1/auth/login';
+export const TEST_TOKEN = '/api/v1/auth/test-token';
+export const PORTFOLIO = '/api/v1/portfolio/';
+export const PORTFOLIO_DETAIL = '/api/crypto/portfolio/detail/';
+export const ASSET = '/api/v1/asset/';
+export const TRANSACTION = '/api/v1/transaction/';
+export const LOG_DATA = '/api/crypto/logdata/';
