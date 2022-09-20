@@ -14,9 +14,7 @@ import Loading from '../components/Loading';
 
 const AssetList = () => {
 	const dispatch = useDispatch();
-
 	const assets = useSelector(state => state.portfolio.assets.assets);
-	const prices_24h = JSON.parse(localStorage.getItem('prices24h'));
 	const isLoading = useSelector(state => state.portfolio.isLoading);
 
 	useEffect(() => {
@@ -24,7 +22,7 @@ const AssetList = () => {
 			dispatch(fetchCurrentPrice(asset.symbol));
 			dispatch(fetch24hprice(asset.symbol.toLowerCase()));
 		});
-	}, [assets]);
+	}, []);
 
 	return (
 		<div>

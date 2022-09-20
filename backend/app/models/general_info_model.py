@@ -27,3 +27,7 @@ class CoinInfo(Document):
 
   class Collection:
     name = "general info"
+
+class CurrentBalance(Document):
+  current_balance: str = Field(...)
+  date_posted: datetime = Field(default_factory=datetime.now)

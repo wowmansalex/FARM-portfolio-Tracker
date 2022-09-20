@@ -58,8 +58,11 @@ class TransactionService:
     return transaction
 
   @staticmethod
-  async def delete_transaction(user: User, transaction_id: UUID) -> None:
-    transaction = await TransactionService.get_transaction(user, transaction_id)
+  async def delete_transaction(transaction_id: UUID, user: User) -> None:
+    
+    transaction = await TransactionService.get_transaction(transaction_id, user)
+    asset = await Asset.find_one(Asset.coin == transaction.coin, Asset.user.id == user.id)
+    await asset.update({'$inc': { 'amount': (-transaction.amount) }})
     if transaction:
       await transaction.delete()
 

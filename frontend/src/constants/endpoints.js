@@ -6,4 +6,4 @@ export const PORTFOLIO = '/api/v1/portfolio/';
 export const PORTFOLIO_DETAIL = '/api/crypto/portfolio/detail/';
 export const ASSET = '/api/v1/asset/';
 export const TRANSACTION = '/api/v1/transaction/';
-export const LOG_DATA = '/api/crypto/logdata/';
+export const LOG_DATA = '/api/v1/general/';

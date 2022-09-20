@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Union
 from uuid import UUID
+import http3
 
 from fastapi import APIRouter, HTTPException, status, Depends
 import pymongo
@@ -7,17 +8,22 @@ import pymongo
 from models.user_model import User
 from models.portofolio_model import Asset
 from schemas.portfolio_schema import PortfolioCreate, PortfolioUpdate, PortfolioOut
-from schemas.general_info_schema import CoinInfoIn, CoinInfoOut
+from schemas.general_info_schema import CoinInfoIn, CoinInfoOut, CurrentBalance
 
 from services.general_info_services import GeneralInfoService
 
+from api.dependencies.user_dependencies import get_current_user
+
 general_info_router = APIRouter()
 
-@general_info_router.get('/', summary="get symbol & image url from the top 100 cryptocurrencies", response_model=List[CoinInfoOut])
-async def get_all_coin_info():
-  return await GeneralInfoService.get_all_coin_info()
+@general_info_router.post('/current_balance', summary="update current balance with timestamp", response_model=CurrentBalance) 
+async def update_current_balance(current_balance: CurrentBalance, user: User = Depends(get_current_user)):
+  return await GeneralInfoService.update_current_balance(current_balance, user)
 
-@general_info_router.get('/coin-info', summary="get symbol, image url by asset name", response_model=CoinInfoOut)
-async def get_coin_info(asset: Asset):
-  return await GeneralInfoService.get_coin_info(asset.name)
+@general_info_router.get('/current_balance', summary="update current balance with timestamp", response_model=List[CurrentBalance])
+async def get_current_balance(user: User = Depends(get_current_user)):
+  return await GeneralInfoService.get_current_balance(user)
+
+
+
 

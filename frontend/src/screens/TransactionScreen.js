@@ -15,7 +15,10 @@ import DeleteConfirmation from '../components/DeleteConfirmation';
 
 const TransactionList = () => {
 	const dispatch = useDispatch();
-	const transactions = useSelector(state => state.portfolio.transactions);
+	const transactions = useSelector(
+		state => state.portfolio.transactions.transactions
+	);
+	console.log(transactions);
 	let asset = useParams();
 
 	const [displayConfirmationModal, setDisplayConfirmationModal] =
@@ -30,7 +33,6 @@ const TransactionList = () => {
 	};
 
 	useEffect(() => {
-		console.log(asset.asset);
 		dispatch(fetchTransactionByAsset(asset.asset));
 	}, []);
 
@@ -85,7 +87,7 @@ const TransactionList = () => {
 										<DeleteConfirmation
 											showModal={displayConfirmationModal}
 											hideModal={hideDeleteModal}
-											id={transaction.id}
+											id={transaction.transaction_id}
 										/>
 									</td>
 								</tr>

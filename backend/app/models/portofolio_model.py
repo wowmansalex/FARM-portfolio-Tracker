@@ -94,10 +94,10 @@ class Transaction(Document):
 
 class LogData(Document):
     logdata_id: UUID = Field(default_factory=uuid4, unique=True)
-    description: str
-    portfolio_id: Link[Portfolio]
-    current_balance: float
-    updated: datetime = Field(default_factory=datetime.now)
+    description: Optional[str]
+    user: Link[User]
+    current_balance: str
+    created_at: datetime = Field(default_factory=datetime.now)
 
     def __repr__(self) -> str:
         return f"<LogData {self.description}>"
@@ -110,7 +110,7 @@ class LogData(Document):
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, LogData):
-            return self.transaction_id == other.transaction_id
+            return self.logdata_id == other.logdata_id
         return False
 
     class Collection:

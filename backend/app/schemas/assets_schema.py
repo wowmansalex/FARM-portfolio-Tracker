@@ -24,7 +24,7 @@ class AssetOut(BaseModel):
   coin: str
   symbol: str
   image: str
-  current_price: str
+  current_price: str | float
   average_price: Optional[str]
   price_24h: Optional[float]
   value: Optional[str]

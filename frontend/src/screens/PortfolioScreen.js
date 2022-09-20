@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -6,8 +6,8 @@ import {
 	fetchAssets,
 	fetchTransactions,
 	fetchPortfolio,
+	updateCurrentBalance,
 	fetchLogData,
-	fetchCoins,
 } from '../features/portfolio/portfolioSlice';
 
 import NewPortfolioScreen from '../screens/NewPortfolioScreen';
@@ -19,7 +19,13 @@ const PortfolioScreen = () => {
 	const dispatch = useDispatch();
 	const { isAuthenticated } = useSelector(state => state.auth);
 
-	const portfolioFetch = [fetchPortfolio(), fetchAssets(), fetchTransactions()];
+	const portfolioFetch = [
+		fetchAssets(),
+		fetchPortfolio(),
+		fetchTransactions(),
+		updateCurrentBalance(),
+		fetchLogData(),
+	];
 
 	const fetchAllData = () => {
 		portfolioFetch.map(fetch => dispatch(fetch));
@@ -27,7 +33,7 @@ const PortfolioScreen = () => {
 
 	useEffect(() => {
 		fetchAllData();
-		const timer = setTimeout(() => fetchAllData(), 10000);
+		const timer = setTimeout(() => fetchAllData(), 30000);
 		return () => clearTimeout(timer);
 	}, [isAuthenticated]);
 

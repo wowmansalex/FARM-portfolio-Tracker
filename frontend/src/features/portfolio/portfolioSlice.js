@@ -151,16 +151,13 @@ export const createNewAsset = createAsyncThunk(
 
 export const deleteTransaction = createAsyncThunk(
 	'transaction/deleteTransaction',
-	async (id, { getState, rejectWithValue }) => {
+	async (transaction_id, { rejectWithValue }) => {
 		try {
-			const portfolioLinked = getState().portfolio.id;
-			const config_delete = {
+			const response = await api.delete(TRANSACTION + `${transaction_id}`, {
 				headers: {
 					Authorization: `Bearer ${token}`,
 				},
-				params: { transaction_id: id, portfolio_linked: portfolioLinked },
-			};
-			const response = await api.delete(TRANSACTION + 'delete', config_delete);
+			});
 			return response.data;
 		} catch (error) {
 			if (error.response && error.response.data.message) {
@@ -176,16 +173,7 @@ export const fetchLogData = createAsyncThunk(
 	'logData/getLogData',
 	async (_, { getState, rejectWithValue }) => {
 		try {
-			const portfolioLinked = localStorage.getItem('portfolio name');
-			const config_log = {
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-				params: {
-					portfolio_linked: portfolioLinked,
-				},
-			};
-			const response = await api.get(LOG_DATA, config_log);
+			const response = await api.get(LOG_DATA + 'current_balance', config);
 
 			return response.data;
 		} catch (error) {
@@ -220,29 +208,22 @@ export const fetch24hprice = createAsyncThunk(
 	async (coin, { rejectWithValue }) => {
 		try {
 			const response = await axios.get(
-				`https://api.coingecko.com/api/v3/coins/${coin}/ohlc?vs_currency=usd&days=1`
+				`http://localhost:8010/proxy/coins/${coin}/ohlc?vs_currency=usd&days=1`
 			);
-			let yesterday = new Date().getTime() - 24 * 60 * 60 * 1000;
+			let yesterday =
+				Math.round((new Date().getTime() - 24 * 60 * 60 * 1000) / 10000) *
+				10000;
 
-			let prices = response.data;
-			let date_24H = [];
-			let price_24h = 0;
+			let prices = await response.data;
 
-			response.data.map(date => {
-				if (yesterday - date[0] < 3600) {
-					date_24H = date[0];
-				}
-			});
+			const prices_24h = await prices.filter(
+				price => (price[0] - yesterday) / 10000 <= 100
+			);
+			console.log(prices_24h[0][1]);
+			const result = await prices_24h[0][1];
 
-			prices.map(price => {
-				if (price[0] == date_24H) {
-					price_24h = price[1];
-				}
-			});
-			console.log({ coin, price_24h });
-
-			localStorage.setItem('prices24h', JSON.stringify({ coin, price_24h }));
-			const prices24h = { coin, price_24h };
+			// localStorage.setItem('prices24h', JSON.stringify({ coin, price_24h }));
+			const prices24h = { coin: coin, price: result };
 			return prices24h;
 		} catch (error) {
 			if (error.response && error.response.data.message) {
@@ -259,7 +240,7 @@ export const fetchCurrentPrice = createAsyncThunk(
 	async (input, { rejectWithValue }) => {
 		try {
 			const response = await axios.get(
-				`https://api.coingecko.com/api/v3/simple/price?ids=${input.toLowerCase()}&vs_currencies=usd`
+				`http://localhost:8010/proxy/simple/price?ids=${input.toLowerCase()}&vs_currencies=usd`
 			);
 
 			let price = [
@@ -278,14 +259,41 @@ export const fetchCurrentPrice = createAsyncThunk(
 	}
 );
 
+export const updateCurrentBalance = createAsyncThunk(
+	'logdata/updateCurrentBalance',
+	async (_, thunkAPI) => {
+		try {
+			const current_balance = {
+				current_balance: JSON.parse(localStorage.getItem('current_balance')),
+			};
+			const response = await api.post(
+				LOG_DATA + 'current_balance',
+				current_balance,
+				config
+			);
+			return response.data;
+		} catch (error) {
+			if (error.response && error.response.data.message) {
+				return thunkAPI.rejectWithValue(error.response.data.message);
+			} else {
+				return thunkAPI.rejectWithValue(error.message);
+			}
+		}
+	}
+);
+
 const initialState = {
 	id: null,
 	portfolio_name: '',
 	assets: {
 		price_24hchanges: [],
 		assets: [],
+		assets_length: null,
 	},
-	transactions: [],
+	transactions: {
+		transactions: [],
+		transactions_length: null,
+	},
 	balance: 0,
 	logData: {
 		coin_names: '',
@@ -320,7 +328,6 @@ const portfolioSlice = createSlice({
 		[fetchPortfolio.fulfilled]: (state, { payload }) => {
 			console.log('fetch portfolio fulfilled');
 			state.isLoading = false;
-			state.balance = payload.balance;
 			state.portfolio_name = payload.name;
 			state.id = payload.id;
 		},
@@ -349,11 +356,24 @@ const portfolioSlice = createSlice({
 		},
 		[fetchTransactions.fulfilled]: (state, { payload }) => {
 			console.log('fetch transaction fulfilled');
-			return { ...state, transactions: payload };
+			state.transactions.transactions = payload;
 		},
 		[fetchTransactions.rejected]: (state, { payload }) => {
 			state.error = payload;
 			console.log('fetch transaction rejected');
+		},
+		[updateCurrentBalance.pending]: state => {
+			state.isLoading = true;
+		},
+		[updateCurrentBalance.fulfilled]: (state, { payload }) => {
+			state.isLoading = false;
+			state.success = true;
+			console.log('current balance updated', payload);
+		},
+		[updateCurrentBalance.rejected]: (state, { payload }) => {
+			state.error = payload;
+			console.log('error at update current balance', payload);
+			state.isLoading = false;
 		},
 		[createNewTransaction.pending]: () => {
 			console.log('creating transaction pending');
@@ -408,7 +428,7 @@ const portfolioSlice = createSlice({
 		},
 		[fetchTransactionByAsset.fulfilled]: (state, { payload }) => {
 			console.log('fetch transaction by asset fulfilled');
-			return { ...state, transactions: payload };
+			state.transactions.transactions = payload;
 		},
 		[fetchTransactionByAsset.rejected]: () => {
 			console.log('fetch transaction by asset rejected');
@@ -422,7 +442,7 @@ const portfolioSlice = createSlice({
 				return item['current_balance'];
 			});
 			state.logData.timestamp = payload.map(item => {
-				return new Date(item['updated']).toLocaleTimeString('en', {
+				return new Date(item['created_at']).toLocaleTimeString('en', {
 					timeStyle: 'short',
 					hour12: false,
 					timeZone: 'UTC',
@@ -454,7 +474,7 @@ const portfolioSlice = createSlice({
 			state.assets.assets.map(asset => {
 				if (asset.symbol.toLowerCase() == payload['coin']) {
 					asset.price_24h =
-						(asset.current_price - payload['price_24h']) / asset.current_price;
+						(asset.current_price - payload['price']) / asset.current_price;
 				}
 			});
 		},
@@ -472,6 +492,12 @@ const portfolioSlice = createSlice({
 					asset.current_price = payload[1];
 				}
 			});
+			let sum = 0;
+			state.assets.assets.map(asset => {
+				sum += asset.current_price * asset.amount;
+			});
+			state.balance = sum;
+			localStorage.setItem('current_balance', sum);
 		},
 		[fetchCurrentPrice.rejected]: (state, { payload }) => {
 			state.error = payload;
